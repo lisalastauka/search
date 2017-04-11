@@ -1,52 +1,68 @@
-var express = require('express');
-var fs      = require('fs');
-var request = require('request');
-var cheerio = require('cheerio');
-var Iconv = require('iconv').Iconv;
-var fromEnc = 'cp1251';
-var toEnc = 'utf-8';
-var translator = new Iconv(fromEnc,toEnc);
-var app  = express();
+const express = require('express');
+const fs = require('fs');
+const request = require('request');
+const rp = require('request-promise-native');
+const cheerio = require('cheerio');
+const Iconv = require('iconv').Iconv;
+const fromEnc = 'cp1251';
+const toEnc = 'utf-8';
+const translator = new Iconv(fromEnc, toEnc);
+const app = express();
+const url = 'https://google.com/search?q=';
+const queryLengthLimit = 200;
+const message = {
+    overLimit: "Query is too long",
+    notFound: 'Nothing found',
+    invalidRequest: 'Invalid request',
+    error: 'Error'
+};
+const targetSelector = 'cite';
+const htmlLink = (obj) => `<a href=${obj.link}> ${obj.title}</a>`;
 
-var parseData = function parseData(data){
-  const html = translator.convert(data).toString();
-  const $ = cheerio.load(html);
-  const target = $('cite');
-  let result;
+const getDataFromTarget = function getDataFromTarget(target, $) {
+    const data = {};
+    target.first().filter(function () {
+        const href = $(this).parent().parent().prev().find('a').attr('href');
+        data.link = href.slice(href.indexOf('=') + 1, href.indexOf('&'));
+        data.title = $(this).parent().parent().prev().text();
 
-  if(!target.html()){
-    result = 'Nothing found';
-  } else {
-    target.first().filter(function(){
-      const href = $(this).parent().parent().prev().find('a').attr('href');
-      const title = $(this).parent().parent().prev().text();
-      const link = href.slice(href.indexOf('=')+1,href.indexOf('&'));
-      result = `<a href=${link}> ${title}</a>`;
     });
-  }
-  return result;
+    return data;
 };
 
+const parseData = function parseData(data) {
+    const html = translator.convert(data).toString();
+    const $ = cheerio.load(html);
+    const target = $(targetSelector);
 
-app.get('/', function(req, res){
-  const query = req.url.substring(1);
+    if (target.html()) {
+        return getDataFromTarget(target, $);
+    }
+};
 
-  if(!query){
-    res.sendFile('./index.html', { root: __dirname });
-  } else
-  if (query.length > 200) {
-    res.send("Query is too long");
-  } else {
-    const url = 'https://google.com/search'+query;
-    request( {
-      url : url,
-      encoding : null }, function (error, response, data) {
-        if(!error){
-          res.send(parseData(data));
-        }
-    })
-  }
+const validateRequest = function (req) {
+    let query = req.url.substring(4).replace(/^\++|\++$/g, '');
+    if (query.length === 0) {
+        return {message: message.invalidRequest};
+    } else if (query.length > queryLengthLimit) {
+        return {message: message.overLimit};
+    }
+    else return {query};
+};
 
+app.get('/', function (req, res) {
+    const query = validateRequest(req).query;
+    if (!query) {
+        res.sendFile('./index.html', {root: __dirname});
+    } else {
+        rp.get({
+            uri: url + query,
+            encoding: null
+        })
+            .then(function (data) {
+                res.send(htmlLink(parseData(data)) || message.notFound);
+            });
+    }
 });
 
 app.listen('8081');
