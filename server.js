@@ -1,68 +1,44 @@
 const express = require('express');
-const fs = require('fs');
-const request = require('request');
-const rp = require('request-promise-native');
-const cheerio = require('cheerio');
-const Iconv = require('iconv').Iconv;
-const fromEnc = 'cp1251';
-const toEnc = 'utf-8';
-const translator = new Iconv(fromEnc, toEnc);
 const app = express();
-const url = 'https://google.com/search?q=';
-const queryLengthLimit = 200;
+const mustacheExpress = require('mustache-express');
+const GoogleSearch = require('./google-search');
 const message = {
     overLimit: "Query is too long",
     notFound: 'Nothing found',
     invalidRequest: 'Invalid request',
-    error: 'Error'
-};
-const targetSelector = 'cite';
-const htmlLink = (obj) => `<a href=${obj.link}> ${obj.title}</a>`;
-
-const getDataFromTarget = function getDataFromTarget(target, $) {
-    const data = {};
-    target.first().filter(function () {
-        const href = $(this).parent().parent().prev().find('a').attr('href');
-        data.link = href.slice(href.indexOf('=') + 1, href.indexOf('&'));
-        data.title = $(this).parent().parent().prev().text();
-
-    });
-    return data;
+    terminatedRequest: 'Terminated request'
 };
 
-const parseData = function parseData(data) {
-    const html = translator.convert(data).toString();
-    const $ = cheerio.load(html);
-    const target = $(targetSelector);
+app.engine('html', mustacheExpress());
+app.set('view engine', 'html');
+app.set('views', __dirname + '/html');
+app.use(express.static(__dirname + '/public'));
 
-    if (target.html()) {
-        return getDataFromTarget(target, $);
+function validateQuery({q = ''}) {
+    const trimmedQuery = q.trim();
+
+    if (trimmedQuery && trimmedQuery.length < 128) {
+        return Promise.resolve(trimmedQuery);
     }
-};
 
-const validateRequest = function (req) {
-    let query = req.url.substring(4).replace(/^\++|\++$/g, '');
-    if (query.length === 0) {
-        return {message: message.invalidRequest};
-    } else if (query.length > queryLengthLimit) {
-        return {message: message.overLimit};
-    }
-    else return {query};
-};
+    return Promise.reject('');
+}
 
 app.get('/', function (req, res) {
-    const query = validateRequest(req).query;
-    if (!query) {
-        res.sendFile('./index.html', {root: __dirname});
-    } else {
-        rp.get({
-            uri: url + query,
-            encoding: null
+
+    validateQuery(req.query)
+        .then((query) => {
+            const gs = new GoogleSearch();
+            return gs.searchByQuery(query)
         })
-            .then(function (data) {
-                res.send(htmlLink(parseData(data)) || message.notFound);
-            });
-    }
+        .then(function (result) {
+            res.render('index', {result});
+        })
+        .catch(function (message) {
+            console.log(message);
+            const result = {message};
+            res.render('index', {result});
+        });
 });
 
 app.listen('8081');
