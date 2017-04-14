@@ -1,10 +1,9 @@
 {
-  "dependencies": {
-    "cheerio": "latest",
-    "express": "latest",
-    "iconv": "latest",
-    "mustache-express": "^1.2.4",
-    "request": "latest",
-    "request-promise-native": "^1.0.3"
-  }
+"dependencies": {
+"cheerio": "latest",
+"express": "latest",
+"iconv": "latest",
+"mustache-express": "^1.2.4",
+"request-promise-native": "^1.0.3"
+}
 }

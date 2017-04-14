@@ -8,17 +8,18 @@ app.set('view engine', 'html');
 app.set('views', __dirname + '/html');
 app.use(express.static(__dirname + '/public'));
 
-function validateQuery({q = ''}) {
-    const trimmedQuery = q.trim();
+function validateQuery({query = ''}) {
+    const trimmedQuery = query.trim();
 
-    if (trimmedQuery) {
-        if (trimmedQuery.length < 128) {
-            return Promise.resolve(trimmedQuery);
-        }
-        else return Promise.reject('Invalid request');
+    if (!trimmedQuery) {
+        return Promise.reject('');
     }
 
-    return Promise.reject('');
+    if (trimmedQuery.length >= 128) {
+        return Promise.reject('Invalid request');
+    }
+
+    return Promise.resolve(trimmedQuery);
 }
 
 app.get('/', function (req, res) {
