@@ -9,8 +9,8 @@ module.exports = class Parser {
 
     parseData(data) {
         const html = translator.convert(data).toString();
-        const page = cheerio.load(html);
-        return page;
+        const $ = cheerio.load(html);
+        return $;
     }
 };
 
