@@ -12,14 +12,15 @@ function validateQuery({query = ''}) {
     const trimmedQuery = query.trim();
     const encodedQuery = encodeURIComponent(trimmedQuery);
 
-    if (encodedQuery) {
-        if (encodedQuery.length < 128) {
-            return Promise.resolve(encodedQuery);
-        }
-        else return Promise.reject('Invalid request');
+    if (!encodedQuery) {
+        return Promise.reject('');
     }
 
-    return Promise.reject('');
+    if (encodedQuery.length >= 128) {
+        return Promise.reject('Invalid request');
+    }
+
+    return Promise.resolve(encodedQuery);
 }
 
 app.get('/', function (req, res) {
