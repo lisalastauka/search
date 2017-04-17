@@ -28,7 +28,7 @@ module.exports = class Search {
 
     externalRequest(query) {
         return rp.get({
-            uri: this.getUrl() + encodeURIComponent(query),
+            uri: this.getUrl() + query,
             encoding: null
         }).catch(() => {
             throw new Error('Terminated request');

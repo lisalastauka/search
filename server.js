@@ -8,12 +8,13 @@ app.set('view engine', 'html');
 app.set('views', __dirname + '/html');
 app.use(express.static(__dirname + '/public'));
 
-function validateQuery({q = ''}) {
-    const trimmedQuery = q.trim();
+function validateQuery({query = ''}) {
+    const trimmedQuery = query.trim();
+    const encodedQuery = encodeURIComponent(trimmedQuery);
 
-    if (trimmedQuery) {
-        if (trimmedQuery.length < 128) {
-            return Promise.resolve(trimmedQuery);
+    if (encodedQuery) {
+        if (encodedQuery.length < 128) {
+            return Promise.resolve(encodedQuery);
         }
         else return Promise.reject('Invalid request');
     }
