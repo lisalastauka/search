@@ -5,7 +5,7 @@
         </div>
     </div>
     <div class="alert alert-success">
-        <strong>Success!</strong> Result link: <a class="alert-link" href={{result.link}}> {{result.title}}</a>
+        Result link: <a class="alert-link" href={{result.link}}> {{result.title}}</a>
     </div>
 {{/result.link}}
 {{#result.message}}
@@ -15,6 +15,6 @@
         </div>
     </div>
     <div class="alert alert-danger">
-        <strong>Error: </strong> {{result.message}}
+        {{result.message}}
     </div>
 {{/result.message}}
