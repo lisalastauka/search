@@ -3,7 +3,7 @@ const rp = require('request-promise-native');
 module.exports = class Search {
 
     getResult() {
-        throw new Error('Provide getFirstResult method');
+        throw new Error('Provide getResult method');
     }
 
     searchByQuery(query) {
